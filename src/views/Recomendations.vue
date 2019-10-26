@@ -1,26 +1,26 @@
 <template>
   <div>
     <v-progress-linear color="primary" indeterminate v-if="!loaded" height="3"></v-progress-linear>
-     <v-row v-if="celebrities.length == 0 && loaded" fill-height class="justify-center align-center mt-4">
+    <v-row
+      v-if="celebrities.length == 0 && loaded"
+      fill-height
+      class="justify-center align-center mt-4"
+    >
       <p class="ml-4">Рекомендаций нет</p>
     </v-row>
     <v-layout v-if="loaded" class="ma-4">
       <v-row class="justify-center">
-        <div  v-for="(item, n) in celebrities" :key="n" class="my-2 mx-4">
-         
-              <v-img
-                v-ripple
-                max-width="140"
-                max-height="140"
-                :src="item.photo"
-                style="border-radius: 360px;"
-                class="elevation-5 v-ripple"
-                color="primary"
-              ></v-img>
-              <b
-                style="text-align:center; color: black"
-                class="pt-2"
-              >{{item.username}}</b>
+        <div @click="accountView(item)" v-for="(item, n) in celebrities" :key="n" class="my-2 mx-4">
+          <v-img
+            v-ripple
+            max-width="140"
+            max-height="140"
+            :src="checkPhoto(item.photo)"
+            style="border-radius: 360px;"
+            class="elevation-5 v-ripple"
+            color="primary"
+          ></v-img>
+          <b style="text-align:center; color: black" class="pt-2">{{item.username}}</b>
         </div>
       </v-row>
     </v-layout>
@@ -70,8 +70,10 @@
 
 <script>
 import { mapState } from "vuex";
+import { checkPhoto} from '../mixins/photoFallback.js'
 export default {
   name: "recomendations",
+  mixins: [checkPhoto],
   data() {
     return {
       loaded: false,
@@ -102,6 +104,27 @@ export default {
     };
   },
   methods: {
+    accountView(celebrity) {
+      if (typeof celebrity.page == 'object') {
+        this.newCelebrityDialog = true;
+        switch (celebrity.network) {
+          case 0:
+            this.newCelebrity.vk = celebrity.username;
+            break;
+          case 1:
+            this.newCelebrity.fb = celebrity.username;
+            break;
+          case 2:
+            this.newCelebrity.instagram = celebrity.username;
+            break;
+
+          default:
+            break;
+        }
+      } else {
+        this.$router.go("profiles/" + celebrity.page);
+      }
+    },
     addCelebrity() {
       this.$store
         .dispatch("addCelebrity", {
@@ -158,7 +181,7 @@ export default {
             this.snackbarText = "Что-то пошло не так";
           }
         });
-    }
+    },
   },
   computed: {
     ...mapState({
@@ -168,7 +191,7 @@ export default {
   beforeCreate() {
     this.$store.dispatch("getSuggestions").then(res => {
       this.loaded = false;
-      if (res.status >=400) {
+      if (res.status >= 400) {
         this.snackbar = true;
         this.loaded = true;
         this.snackbarColor = "error";

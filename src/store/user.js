@@ -42,7 +42,7 @@ const worker = {
           res =>
             res.json().then(data => {
               localStorage.setItem('user', data.access);
-              resolve(res);
+              resolve({ res, data });
             }),
           error => {
             reject(error);

@@ -23,6 +23,9 @@ const profiles = {
     setCelebrity(state, data) {
       state.celebrity = data;
     },
+    pushCelebrityPosts(state, data) {
+      state.celebrity.posts = state.celebrity.posts.concat(data);
+    },
     cleanState(state) {
       state = initialState;
     },
@@ -140,17 +143,41 @@ const profiles = {
         );
       });
     },
-    getCelebrity({ commit }, id) {
+    deleteProfile({ commit }, data) {
+      return new Promise((resolve, reject) => {
+        const requestOptions = {
+          headers: authHeader(),
+          method: 'DELETE',
+          body: JSON.stringify(data)
+        };
+        fetch(url + 'api/profiles/' + data, requestOptions).then(
+          res => {
+            resolve(res);
+          },
+          error => {
+            reject(error);
+          }
+        );
+      });
+    },
+    getCelebrity({ commit }, data) {
       return new Promise((resolve, reject) => {
         const requestOptions = {
           headers: authHeader(),
           method: 'GET'
         };
-        fetch(url + 'api/profiles/' + id + '/', requestOptions).then(
+        fetch(
+          url + 'api/profiles/' + data.id + '/?page=' + data.page,
+          requestOptions
+        ).then(
           res => {
             resolve(res);
-            res.json().then(data => {
-              commit('setCelebrity', data);
+            res.json().then(celeb => {
+              if (data.page > 1) {
+                commit('pushCelebrityPosts', celeb.posts);
+              } else {
+                res.status == 200 ? commit('setCelebrity', celeb) : '';
+              }
             });
           },
           error => {
@@ -159,17 +186,18 @@ const profiles = {
         );
       });
     },
-    getCelebrityPosts({ commit }, data) {
+    getCelebrityPosts({ commit }, id) {
       return new Promise((resolve, reject) => {
         const requestOptions = {
           headers: authHeader(),
           method: 'GET'
         };
-        fetch(url + 'api/profiles/' + data.id + '/posts/', requestOptions).then(
+        fetch(url + 'api/profiles/' + id + '?page=2', requestOptions).then(
           res => {
             resolve(res);
             res.json().then(data => {
-              commit('setCelebrity', data);
+              commit('setCelebrityPosts', data);
+              console.log(data);
             });
           },
           error => {

@@ -1,12 +1,19 @@
 <template>
   <div>
-    <v-progress-linear color="primary" indeterminate v-if="!loaded" height="3"></v-progress-linear>
+    <v-progress-linear
+      color="primary"
+      fixed
+      style="top:50;"
+      indeterminate
+      v-if="!loaded"
+      height="3"
+    ></v-progress-linear>
     <div v-else>
       <v-row class="ml-2 mt-2 justify-center">
         <v-img
           style="border-radius: 100px;"
           class="elevation-1 mx-2"
-          :src="celebrity.profile.photo"
+          :src="checkPhoto(celebrity.profile.photo)"
           max-width="140"
           max-height="140"
         />
@@ -54,43 +61,29 @@
           <post-card :show-name="false" :posts="celebrity.posts"></post-card>
         </v-tab-item>
         <v-tab-item ref="network">
-          <v-row class="px-4">
-          <v-slider
-            v-model="date"
-            class="align-center"
-            :max="365"
-            :min="7"
-            hide-details
-          ><template v-slot:prepend>
-            <span>Количество дней</span>
-          </template>
-            <template v-slot:append>
-              <v-text-field
-                v-model="date"
-                class="mt-0 mx-1 pt-0"
-                hide-details
-                single-line
-                type="number"
-                style="width: 50px"
-              ></v-text-field>
-              <v-btn outline text color="primary" @click="getGraph">ОТРИСОВАТЬ</v-btn>
-            </template>
-          </v-slider>
+          <v-row class="counter">
+            <v-text-field
+              v-model="date"
+              hide-details
+              label="Количество дней"
+              type="number"
+              style="width: 100px !important"
+            ></v-text-field>
+            <v-btn outlined text color="primary" @click="getGraph">ОТРИСОВАТЬ</v-btn>
           </v-row>
-          <v-row min-height="100" style="min-height: 100px" class="mt-2 justify-center align-center">
-               <v-progress-circular
-               class="mt-2"
-               v-if="graphLoading"
-      indeterminate
-      color="primary"
-    ></v-progress-circular>
-          <d3-network
-            v-if="!graphLoading"
-            @node-click="accountView"
-            :net-nodes="graph.nodes"
-            :net-links="graph.links"
-            :options="options"
-          />
+          <v-row
+            min-height="100"
+            style="min-height: 100px"
+            class="mt-2 justify-center align-center"
+          >
+            <v-progress-circular class="mt-2" v-if="graphLoading" indeterminate color="primary"></v-progress-circular>
+            <d3-network
+              v-if="!graphLoading"
+              @node-click="accountView"
+              :net-nodes="graph.nodes"
+              :net-links="graph.links"
+              :options="options"
+            />
           </v-row>
         </v-tab-item>
       </v-tabs>
@@ -150,6 +143,7 @@
           </v-col>
         </v-card-text>
         <v-card-actions>
+          <v-btn text color="error" @click="deleteProfile">УДАЛИТЬ ПРОФИЛЬ</v-btn>
           <v-btn text color="primary" @click="updateAccounts">ДОБАВИТЬ</v-btn>
         </v-card-actions>
       </v-card>
@@ -160,16 +154,19 @@
 <script>
 import { mapState } from "vuex";
 import D3Network from "vue-d3-network";
-import postCard from '../components/postCard.vue'
-
+import postCard from "../components/postCard.vue";
+import { checkPhoto } from "../mixins/photoFallback.js";
 
 export default {
   name: "profile",
+  mixins: [checkPhoto],
   components: {
-    D3Network, postCard
+    D3Network,
+    postCard
   },
   data() {
     return {
+      page: 1,
       date: 30,
       loaded: false,
       snackbar: false,
@@ -180,7 +177,8 @@ export default {
       saveLoading: false,
       newAccountsDialog: false,
       graphLoading: true,
-      items: [{
+      items: [
+        {
           value: "0",
           text: "Бизнес"
         },
@@ -188,7 +186,8 @@ export default {
         { value: "2", text: "Спорт" },
         { value: "3", text: "Кино" },
         { value: "4", text: "Интернет" },
-        { value: "5", text: "Другое" }],
+        { value: "5", text: "Другое" }
+      ],
       newCelebrity: {
         instagram: "",
         vk: "",
@@ -203,17 +202,23 @@ export default {
         network: "",
         special_params: "",
         text: "",
-        date_posted: "",
-        
+        date_posted: ""
       },
       graph: null,
       editAccountsDialog: false,
       editAccountsLinks: {
         vk: null,
         fb: null,
-        instagram: null,
+        instagram: null
       }
     };
+  },
+
+  beforeMount() {
+    this.getCelebrity();
+  },
+  mounted() {
+    this.scroll();
   },
   computed: {
     ...mapState({
@@ -228,35 +233,61 @@ export default {
       };
     }
   },
+
+  watch: {
+    //Чистим значения в диалоговом окне после закрытия
+    newAccountsDialog: function(val) {
+      if (!val) {
+        this.newCelebrity = {
+          instagram: "",
+          vk: "",
+          fb: "",
+          firstName: "",
+          lastName: "",
+          activity: ""
+        };
+      }
+    }
+  },
   methods: {
+    deleteProfile() {
+      this.$store.dispatch("deleteProfile", this.$route.params.id).then(res => {
+        if (res.status == 204) {
+          this.snackbar = true;
+          this.snackbarColor = "success";
+          this.snackbarText = "Профиль удален";
+          setTimeout(window.history.back(), 3000);
+        }
+      });
+    },
     updateAccounts() {
       this.$store
-                .dispatch("addCelebrityAccounts", {
-                  data: [
-                    {
-                      profile_id: celebrity.profile.id,
-                      username: this.editAccountsLinks.vk,
-                      network: 0
-                    },
-                    {
-                      profile_id: celebrity.profile.id,
-                      username: this.editAccountsLinks.fb,
-                      network: 1
-                    },
-                    {
-                      profile_id: celebrity.profile.id,
-                      username: this.editAccountsLinks.instagram,
-                      network: 2
-                    }
-                  ]
-                })
-                .then(res => {
-                  if (res.status == 200) {
-                    this.snackbar = true;
-                    this.snackbarColor = "success";
-                    this.snackbarText = "Аккаунты добавлены";
-                  }
-                });
+        .dispatch("addCelebrityAccounts", {
+          data: [
+            {
+              profile_id: celebrity.profile.id,
+              username: this.editAccountsLinks.vk,
+              network: 0
+            },
+            {
+              profile_id: celebrity.profile.id,
+              username: this.editAccountsLinks.fb,
+              network: 1
+            },
+            {
+              profile_id: celebrity.profile.id,
+              username: this.editAccountsLinks.instagram,
+              network: 2
+            }
+          ]
+        })
+        .then(res => {
+          if (res.status == 200) {
+            this.snackbar = true;
+            this.snackbarColor = "success";
+            this.snackbarText = "Аккаунты добавлены";
+          }
+        });
     },
     addCelebrity() {
       this.$store
@@ -296,8 +327,8 @@ export default {
                     this.snackbar = true;
                     this.snackbarColor = "success";
                     this.snackbarText = "Аккаунты добавлены";
-                    
-        this.newAccountsDialog = true;
+
+                    this.newAccountsDialog = true;
                   }
                 });
             });
@@ -312,7 +343,7 @@ export default {
       this.editableAccount = account;
       this.editAccountsDialog = true;
     },
-  
+
     accountView(event, node) {
       if (node.data.id == -1) {
         this.newAccountsDialog = true;
@@ -335,12 +366,10 @@ export default {
       }
     },
 
-    formatter(node) {
-    },
     getGraph() {
       this.graphLoading = true;
       this.$store
-        .dispatch("getGraph", {id: this.$route.params.id, date: this.date})
+        .dispatch("getGraph", { id: this.$route.params.id, date: this.date })
         .then(res => {
           this.loaded = true;
           if (res.status == 200) {
@@ -373,6 +402,36 @@ export default {
           this.snackbarText = error;
         });
     },
+    getCelebrity() {
+      this.$store
+        .dispatch("getCelebrity", {
+          id: this.$route.params.id,
+          page: this.page
+        })
+        .then(res => {
+          this.loaded = true;
+          if (res.status == 401) {
+            this.snackbar = true;
+            this.snackbarColor = "error";
+            this.snackbarText = "Упс, кажется, слетела авторизация";
+          } else if (res.status == 404) {
+            this.snackbar = true;
+            this.snackbarColor = "warning";
+            this.snackbarText = "Все посты загружены";
+          } else if (res.status >= 500) {
+            this.snackbar = true;
+            this.snackbarColor = "error";
+            this.snackbarText = "Ошибка получения постов";
+          } else if (res.status == 200) {
+            this.page++;
+          }
+        })
+        .catch(error => {
+          this.snackbar = true;
+          this.snackbarColor = "error";
+          this.snackbarText = error;
+        });
+    },
     changeSub(sub) {
       this.subLoading = true;
       let type = sub ? "unsubscribe" : "subscribe";
@@ -392,27 +451,31 @@ export default {
           }
         });
     },
-  },
-  beforeCreate() {
-    this.$store
-      .dispatch("getCelebrity", this.$route.params.id)
-      .then(res => {
-        this.loaded = true;
-        if (res.status == 401) {
-          this.snackbar = true;
-          this.snackbarColor = "error";
-          this.snackbarText = "Упс, кажется, слетела авторизация";
-        } else if (res.status >= 500) {
-          this.snackbar = true;
-          this.snackbarColor = "error";
-          this.snackbarText = "Ошибка получения постов";
+    scroll() {
+      window.onscroll = () => {
+        let bottomOfWindow =
+          document.documentElement.scrollTop + window.innerHeight ===
+          document.documentElement.offsetHeight;
+        if (bottomOfWindow) {
+          this.getCelebrity();
         }
-      })
-      .catch(error => {
-        this.snackbar = true;
-        this.snackbarColor = "error";
-        this.snackbarText = error;
-      });
+      };
+    }
   }
 };
 </script>
+
+<style>
+.net {
+  width: 100%;
+  margin: auto;
+  text-align: center;
+}
+
+.counter {
+  width: 200px;
+  text-align: center;
+  margin: auto;
+  padding-top: 15px;
+}
+</style>

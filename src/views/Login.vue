@@ -2,13 +2,10 @@
   <v-content style="background-color: white">
     <v-container class="fill-height" fluid>
       <v-row align="center" justify="center">
-      
         <v-col cols="12" xs="10" md="5">
-         <div align=center>
-            <img
-              src="https://cosmopost.website.yandexcloud.net/files/logo.jpg"
-              width="80%"
-            /></div>
+          <div align="center">
+            <img src="https://cosmopost.website.yandexcloud.net/files/logo.jpg" width="80%" />
+          </div>
           <v-tabs background-color="transparent" v-model="tab" color="primary" grow>
             <v-tab v-for="item in action" :key="item">{{item}}</v-tab>
 
@@ -66,26 +63,22 @@
                     type="text"
                   ></v-text-field>
                   <v-text-field
-                    :append-icon="show4 ?  'eye' : 'eye-off'"
-                    :type="show4 ? 'text' : 'password'"
                     name="input-10-1"
+                    :rules="[rules.length]"
                     label="Пароль"
+                    type="password"
                     hint="Минимум 8 символов"
                     v-model="password"
                     prepend-icon="mdi-lock"
-                    error
-                    @click:append="show4 = !show4"
                   ></v-text-field>
                   <v-text-field
-                    :append-icon="show5 ? 'eye' : 'eye-off'"
-                    :type="show5 ? 'text' : 'password'"
                     name="input-10-2"
                     label="Пароль"
+                    type="password"
+                    :rules="[rules.length]"
                     v-model="passwordConfirm"
                     hint="Минимум 8 символов"
-                    error
                     prepend-icon="mdi-lock"
-                    @click:append="show5 = !show5"
                   ></v-text-field>
                 </v-form>
                 <v-btn
@@ -95,19 +88,24 @@
                   prepend-icon="mdi-lock"
                   color="primary"
                 >Регистрация</v-btn>
+                <video
+                  playsinline
+                  preload="metadata"
+                  type="video/mp4"
+                  src="blob:https://www.instagram.com/bc015067-5940-47d3-b565-7938f8d61ba4"
+                ></video>
               </v-card>
             </v-tab-item>
           </v-tabs>
         </v-col>
       </v-row>
     </v-container>
-    <v-snackbar v-model="snackbar" :color="snackbarColor" :timeout="2000">
-      {{ snackbarText }}
+    <v-snackbar multi-line v-model="snackbar" vertical :color="snackbarColor" :timeout="8000">
+      <p>{{ snackbarText }}</p>
       <v-btn color="white" text @click="snackbar = false">
         <v-icon>mdi-close</v-icon>
       </v-btn>
     </v-snackbar>
-    
   </v-content>
 </template>
 
@@ -125,11 +123,12 @@ export default {
     email: null,
     lastname: null,
     passwordConfirm: null,
-    show4: false,
-    show5: false,
     snackbar: false,
     snackbarColor: null,
-    snackbarText: null
+    snackbarText: [],
+    rules: {
+      length: value => value.length >= 8 || "Минимум 8 символов"
+    }
   }),
   methods: {
     login() {
@@ -155,12 +154,17 @@ export default {
           email: this.email
         })
         .then(res => {
+          console.log(res);
           this.regLoading = false;
-          if (res.status == 400) {
+          if (res.res.status == 400) {
             this.snackbar = true;
             this.snackbarColor = "error";
-            this.snackbarText = "Что-то пошло не так";
-          } else if (res.status == 201) {
+            let errors = [];
+            Object.keys(res.data).map(key => {
+              return errors.push([key + ": " + res.data[key][0]]);
+            });
+            this.snackbarText = errors.join("   ");
+          } else if (res.res.status == 201) {
             this.snackbar = true;
             this.snackbarColor = "success";
             this.snackbarText = "Успешная регистрация";
@@ -169,8 +173,8 @@ export default {
         })
         .catch(error => {
           this.snackbar = true;
-            this.snackbarColor = "error";
-            this.snackbarText = error;
+          this.snackbarColor = "error";
+          this.snackbarText = error;
         });
     },
     isLoggedIn() {

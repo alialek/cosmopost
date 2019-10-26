@@ -4,6 +4,9 @@ import store from './store';
 import router from './router';
 import vuetify from './plugins/vuetify';
 import VueMasonry from 'vue-masonry-css';
+import ScrollLoader from 'vue-scroll-loader';
+
+Vue.use(ScrollLoader);
 
 Vue.use(VueMasonry);
 

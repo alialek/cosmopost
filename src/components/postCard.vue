@@ -1,14 +1,13 @@
 <template>
   <div>
     <v-row class="justify-center">
-      <masonry :cols="{default: 4, 1020: 3, 800: 2, 530: 1}">
+      <masonry :cols="{default: 4, 2200: 5, 1800: 4, 1440: 3, 1080: 2, 720: 1}">
         <v-card
           v-for="(post, n) in posts"
           :key="n"
           class="my-4 mx-2"
           ripple
-          min-width="250"
-          max-width="350"
+          max-width="360"
           min-height="100"
         >
           <v-card-text v-if="showName">
@@ -33,17 +32,21 @@
             :src="post.attachment_link"
           ></v-img>
 
-          <v-card-text @click="openDialog(post)" style="max-height: 100px; overflow: hidden">
+          <v-card-text
+            v-if="post.special_params.type !== 1"
+            @click="openDialog(post)"
+            style="max-height: 100px; overflow: hidden"
+          >
             <span class="text--primary">{{post.text}}</span>
           </v-card-text>
           <v-card-text>
             <v-row class="justify-space-between align-center align-content-center">
               <div class="ml-2">
-                <router-link :to="post.link">
+                <a target="blank" :href="post.link">
                   <v-icon
                     color="primary"
                   >{{ post.network == 2 ? 'mdi-instagram' : post.network == 0 ? 'mdi-vk' : post.network == 1 ? 'mdi-facebook' : 'mdi-question' }}</v-icon>
-                </router-link>
+                </a>
               </div>
               <div>
                 <v-btn :loading="post.saveLoading" small fab text color="primary">
@@ -61,14 +64,16 @@
       </masonry>
     </v-row>
     <v-dialog style="overflow: hidden" v-model="fullDialog">
-      <v-row class="align-center justify-space-between d-none d-sm-flex" style="height: 100%; background-color:white; margin: 0 !important;">
+      <v-row
+        class="align-center justify-space-between d-none d-sm-flex"
+        style="height: 100%; background-color:white; margin: 0 !important;"
+      >
         <div style="height: 80vh; width: 60%">
-          <video
-            style="height: 100%; width: 100%; object-fit: contain;"
+          <div
             v-if="activeItem.special_params.type == 1"
-            :src="activeItem.attachment_link"
-            controls
-          />
+            style="overflow-y: scroll; height: 100%; width: 100%; object-fit: contain;"
+            v-html="getVideoFrame(activeItem.link)"
+          ></div>
           <v-img
             v-else
             style="height: 100%; width: 100%; object-fit: contain;"
@@ -135,6 +140,14 @@ export default {
     openDialog(item) {
       this.activeItem = item;
       this.fullDialog = true;
+    },
+    getVideoFrame(link) {
+      //Время жизни ссылок на видео в инсте составляет 2-3 суток, поэтому отображаем iframe вместо прямой ссылки на видос
+      return (
+        '<iframe class="instagram-media instagram-media-rendered" id="instagram-embed-0" src="' +
+        link +
+        '/embed/captioned/" allowtransparency="true" allowfullscreen="true" frameborder="0" height="879" data-instgrm-payload-id="instagram-media-payload-0" scrolling="no" style="background: white; width: calc(100% - 2px); border-radius: 3px; border: 1px solid rgb(219, 219, 219); box-shadow: none; display: block; margin: 0px 0px 12px; min-width: 326px; padding: 0px;"></iframe>'
+      );
     },
     updateSaved(bool, id) {
       let isSaved = !bool;

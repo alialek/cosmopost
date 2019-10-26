@@ -7,16 +7,18 @@ const feed = {
     posts: []
   },
   actions: {
-    getFeed({ commit }) {
+    getFeed({ commit }, page) {
       return new Promise((resolve, reject) => {
         const requestOptions = {
           headers: authHeader(),
           method: 'GET'
         };
-        fetch(url + 'api/feed/', requestOptions).then(
+        fetch(url + 'api/feed/?page=' + page, requestOptions).then(
           res =>
             res.json().then(data => {
-              commit('setFeed', data);
+              if (res.status == 200) {
+                commit('setFeed', data);
+              }
               resolve(res);
             }),
           error => {
@@ -46,7 +48,8 @@ const feed = {
   },
   mutations: {
     setFeed(state, data) {
-      state.posts = data.posts;
+      console.log('here');
+      state.posts = state.posts.concat(data.posts);
     }
   }
 };

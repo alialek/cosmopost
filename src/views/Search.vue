@@ -6,6 +6,8 @@
         label="Поиск"
         @input="getProfiles"
         v-model="search"
+        autofocus
+        ref="textfield"
         class="mx-4"
         prepend-icon="mdi-magnify"
       ></v-text-field>
@@ -18,16 +20,16 @@
       @change="filterSearch"
       return-object
     ></v-select>
-    <v-layout v-if="loaded" >
+    <v-layout v-if="loaded">
       <v-row class="justify-center">
         <div v-for="(item, n) in celebrities" :key="n" class="mt-2 mx-2">
           <router-link :to="'profile/'+item.id">
             <v-col class="justify-center">
               <v-img
                 v-ripple
-               max-width="140"
+                max-width="140"
                 max-height="140"
-                :src="item.photo"
+                :src="checkPhoto(item.photo)"
                 style="border-radius: 360px;"
                 class="elevation-5 v-ripple"
                 color="primary"
@@ -89,8 +91,10 @@
 
 <script>
 import { mapState } from "vuex";
+import { checkPhoto } from "../mixins/photoFallback.js";
 export default {
   name: "search",
+  mixins: [checkPhoto],
   data() {
     return {
       loaded: false,
@@ -122,16 +126,16 @@ export default {
     };
   },
   methods: {
-    filterSearch(){
+    filterSearch() {
       this.loaded = false;
-      this.$store.dispatch("getSearchQuery",this.searchID).then(res => {
-      this.loaded = true;
-      if (res.status == 401) {
-        this.snackbar = true;
-        this.snackbarColor = "error";
-        this.snackbarText = "Упс, кажется, слетела авторизация";
-      }
-    });
+      this.$store.dispatch("getSearchQuery", this.searchID).then(res => {
+        this.loaded = true;
+        if (res.status == 401) {
+          this.snackbar = true;
+          this.snackbarColor = "error";
+          this.snackbarText = "Упс, кажется, слетела авторизация";
+        }
+      });
     },
     getSuggestions() {
       this.$store.dispatch("getSuggestions").then(res => {
@@ -224,6 +228,10 @@ export default {
         this.snackbarText = "Упс, кажется, слетела авторизация";
       }
     });
+  },
+  updated() {
+    //KO$TbIl' - фокус на строке поиска после обновления информации на странцие
+    this.$refs.textfield.focus();
   }
 };
 </script>
