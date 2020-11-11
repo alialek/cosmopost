@@ -1,4 +1,7 @@
-# test
+# Cosmopost
+SPA по заданию компании Cosmopolitan на треке VK Hack 2019. 
+Технологии: Vue, Vuetify
+Итог: 2 место в треке
 
 ## Project setup
 ```
